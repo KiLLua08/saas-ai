@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
+import Image from 'next/image'
+
 
 export default function Header() {
   const { data: session, status } = useSession()
@@ -9,7 +11,7 @@ export default function Header() {
   return (
     <header className="bg-white shadow py-4 px-6 flex justify-between items-center">
       <Link href="/" className="text-xl font-bold text-blue-600">
-        AI Task Manager
+        <Image src="/images/app.png" alt="icon" width={40} height={40} />
       </Link>
 
       {status === 'loading' ? null : session ? (
