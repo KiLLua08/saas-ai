@@ -2,10 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { OpenAI } from 'openai'
+import Groq from 'groq-sdk'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-console.log("OPENAI KEY heeeeeeeeeeeeeey:", process.env.OPENAI_API_KEY)
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY || '',
+})
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -18,27 +19,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Task required' }, { status: 400 })
   }
 
-  const prompt = `Suggest 3 related actionable tasks for: "${task}"`
+  const prompt = `Suggest 3 clear, practical, and actionable tasks related to: "${task}"`
 
   try {
-    const chatCompletion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+    const chatCompletion = await groq.chat.completions.create({
+      model: 'llama3-70b-8192',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 100,
+      max_tokens: 200,
     })
 
-    const suggestionText = chatCompletion.choices[0].message.content
-    const suggestions = suggestionText
-      ?.split('\n')
+    const content = chatCompletion.choices[0].message.content || ''
+    const suggestions = content
+      .split('\n')
       .map(line => line.replace(/^\d+\.\s*/, '').trim())
       .filter(Boolean)
 
     return NextResponse.json({ suggestions })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: 'Failed to generate suggestions' }, { status: 500 })
+    return NextResponse.json({ error: 'Groq suggestion failed' }, { status: 500 })
   }
 }
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-
-//daed island 2
+  return NextResponse.json({ message: 'Suggest API is ready to use' })
+}
